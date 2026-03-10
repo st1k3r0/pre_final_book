@@ -8,9 +8,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Image } from "@/components/ui/image";
 import { api } from "@/server/api";
 import { MessageSquareCheck } from "lucide-react";
-import Image from "next/image";
+import NextImage from "next/image";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export default async function Home() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-800 font-sans dark:bg-black">
       <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-zinc-400 dark:bg-black sm:items-start">
-        <Image
+        <NextImage
           className="dark:invert"
           src="/next.svg"
           alt="Next.js logo"
@@ -57,7 +58,7 @@ export default async function Home() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <Image
+            <NextImage
               className="dark:invert"
               src="/vercel.svg"
               alt="Vercel logomark"
@@ -102,12 +103,22 @@ export default async function Home() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        <div className=" grid grid-cols-3 gap-4">
+          {products?.map((product) => (
+            <div
+              key={product.id}
+              className="bg-zinc-900 border border-pink-600 rounded-3xl p-4 flex flex-col gap-4"
+            >
+              <div className=" relative w-full aspect-square rounded-3xl overflow-hidden">
+                {product.image && <Image src={product.image} />}
+              </div>
+              <p className="text-2xl font-semibold text-white">
+                {product.name}
+              </p>
+            </div>
+          ))}
+        </div>
       </main>
-      <div>
-        {products?.map((prod) => (
-          <p key={prod.id}>{prod.name}</p>
-        ))}
-      </div>
     </div>
   );
 }
