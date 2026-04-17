@@ -95,30 +95,45 @@ export const authRouter = new Elysia({ prefix: "/accounts" })
         return { code: 400, message: "Данный логин уже используется" };
       }
 
-      const hashedPassword = await bcrypt.hash(body.password, BCRYPT_ROUNDS);
+      if (body.email) {
+        const existingEmail = await db.query.users.findFirst({
+          where: eq(users.email, body.email),
+        });
+        if (existingEmail) {
+          set.status = 400;
+          return { code: 400, message: "Аккаунт с данным email уже существует" };
+        }
+      }
 
-      const [user] = await db
-        .insert(users)
-        .values({
-          login: body.login,
+      try {
+        const hashedPassword = await bcrypt.hash(body.password, BCRYPT_ROUNDS);
+
+        const [user] = await db
+          .insert(users)
+          .values({
+            login: body.login,
+            email: body.email || null,
+            hashedPassword,
+            role: "CLIENT",
+          })
+          .returning();
+
+        await db.insert(clientProfiles).values({
+          userId: user.id,
+          firstName: body.firstName,
+          lastName: body.lastName,
+          phone: body.phone,
           email: body.email || null,
-          hashedPassword,
-          role: "CLIENT",
-        })
-        .returning();
+          birthDate: body.birthDate || null,
+          city: body.city || null,
+          gender: (body.gender as "male" | "female" | "unspecified") ?? "unspecified",
+        });
 
-      await db.insert(clientProfiles).values({
-        userId: user.id,
-        firstName: body.firstName,
-        lastName: body.lastName,
-        phone: body.phone,
-        email: body.email || null,
-        birthDate: body.birthDate || null,
-        city: body.city || null,
-        gender: (body.gender as "male" | "female" | "unspecified") ?? "unspecified",
-      });
-
-      return { success: true, role: "CLIENT" };
+        return { success: true, role: "CLIENT" };
+      } catch {
+        set.status = 500;
+        return { code: 500, message: "Ошибка при создании аккаунта. Попробуйте позже" };
+      }
     },
     {
       body: z.object({

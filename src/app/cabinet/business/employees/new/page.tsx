@@ -18,7 +18,8 @@ import {
 import { toast } from "sonner";
 import { api } from "@/app/lib/client/api";
 
-const BUSINESS_COLOR = "#1a6b4a";
+const BUSINESS_COLOR = "#7c3aed";
+const PAGE_BG = "#0c0812";
 
 const POSITIONS = ["Мастер", "Администратор", "Менеджер"];
 const SPECIALIZATIONS = [
@@ -149,11 +150,11 @@ export default function NewEmployeePage() {
   const inputCls = (field: keyof FormData) => (errors[field] ? "border-destructive" : "");
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ backgroundColor: PAGE_BG }}>
       {/* Header */}
       <header
         className="flex items-center gap-3 px-6 py-4"
-        style={{ backgroundColor: "#4a235a" }}
+        style={{ backgroundColor: BUSINESS_COLOR }}
       >
         <Link href="/cabinet/business/employees">
           <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
@@ -179,7 +180,7 @@ export default function NewEmployeePage() {
           <div className="grid md:grid-cols-2 gap-6">
             {/* Left — Personal */}
             <div className="space-y-4">
-              <div className="bg-white rounded-2xl p-6 shadow-sm border space-y-4">
+              <div className="bg-card rounded-2xl p-6 shadow-sm border space-y-4">
                 <h2 className="font-semibold" style={{ color: BUSINESS_COLOR }}>
                   Личные данные
                 </h2>
@@ -243,7 +244,7 @@ export default function NewEmployeePage() {
               </div>
 
               {/* Account block */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border space-y-4">
+              <div className="bg-card rounded-2xl p-6 shadow-sm border space-y-4">
                 <h2 className="font-semibold" style={{ color: BUSINESS_COLOR }}>
                   Аккаунт
                 </h2>
@@ -307,7 +308,7 @@ export default function NewEmployeePage() {
             </div>
 
             {/* Right — Work */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border space-y-4">
+            <div className="bg-card rounded-2xl p-6 shadow-sm border space-y-4">
               <h2 className="font-semibold" style={{ color: BUSINESS_COLOR }}>
                 Рабочие данные
               </h2>
@@ -417,7 +418,7 @@ export default function NewEmployeePage() {
                 { label: "Логин", value: createdCredentials.login },
                 { label: "Пароль", value: createdCredentials.password },
               ].map((item) => (
-                <div key={item.label} className="flex items-center gap-2 bg-gray-50 rounded-lg p-3 border">
+                <div key={item.label} className="flex items-center gap-2 bg-secondary rounded-lg p-3 border">
                   <div className="flex-1">
                     <p className="text-xs text-muted-foreground">{item.label}</p>
                     <p className="font-mono font-semibold">{item.value}</p>
@@ -438,7 +439,7 @@ export default function NewEmployeePage() {
 
             <Button
               className="w-full mt-2"
-              style={{ backgroundColor: "#4a235a" }}
+              style={{ backgroundColor: BUSINESS_COLOR }}
               onClick={() => router.push("/cabinet/business/employees")}
             >
               Готово

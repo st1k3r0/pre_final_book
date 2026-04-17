@@ -16,6 +16,7 @@ import {
   Clock,
   User,
   AlertTriangle,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +32,14 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { api } from "@/app/lib/client/api";
 
-const CLIENT_COLOR = "#1a5fa8";
+const CLIENT_COLOR = "#3b82f6";
+const PAGE_BG   = "#0c0812";
+const CARD_BG   = "#14101f";
+const CARD_BG2  = "#1c1630";
+const BORDER_C  = "rgba(168,85,247,0.22)";
+const TEXT_C    = "#f0ede8";
+const MUTED_C   = "rgba(240,237,232,0.5)";
+const NEON_C    = "#a855f7";
 
 type Appointment = {
   id: string;
@@ -78,8 +86,8 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#f0a000",
-  confirmed: "#1a6b4a",
-  completed: "#1a5fa8",
+  confirmed: "#10b981",
+  completed: "#3b82f6",
   cancelled: "#999",
 };
 
@@ -97,8 +105,9 @@ function RescheduleModal({
   const mutation = useMutation({
     mutationFn: async () => {
       if (!newDate || !newTime) throw new Error("Выберите дату и время");
-      const datetime = new Date(`${newDate}T${newTime}`).toISOString();
-      await api.appointments({ id: appointmentId }).reschedule.patch({ datetime });
+      const datetime = new Date(`${newDate}T${newTime}`);
+      if (datetime <= new Date()) throw new Error("Нельзя перенести на прошедшее время");
+      await api.appointments({ id: appointmentId }).reschedule.patch({ datetime: datetime.toISOString() });
     },
     onSuccess: () => {
       toast.success("Запись перенесена");
@@ -143,6 +152,112 @@ function RescheduleModal({
             style={{ backgroundColor: CLIENT_COLOR }}
           >
             Перенести
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ReviewModal({
+  appointmentId,
+  masterName,
+  onClose,
+}: {
+  appointmentId: string;
+  masterName: string;
+  onClose: () => void;
+}) {
+  const [rating, setRating] = useState(0);
+  const [hovered, setHovered] = useState(0);
+  const [comment, setComment] = useState("");
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (rating === 0) throw new Error("Выберите оценку");
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ appointmentId, rating, comment: comment || undefined }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          (data as { message?: string })?.message ?? "Ошибка при отправке отзыва",
+        );
+      }
+    },
+    onSuccess: () => {
+      toast.success("Отзыв отправлен!");
+      queryClient.invalidateQueries({ queryKey: ["client-appointments"] });
+      onClose();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Отзыв о мастере</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">{masterName}</p>
+
+          {/* Star rating */}
+          <div className="space-y-1.5">
+            <Label>Оценка *</Label>
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onMouseEnter={() => setHovered(s)}
+                  onMouseLeave={() => setHovered(0)}
+                  onClick={() => setRating(s)}
+                  className="transition-transform hover:scale-110"
+                >
+                  <Star
+                    className="h-8 w-8"
+                    style={{
+                      fill: s <= (hovered || rating) ? "#f0a000" : "transparent",
+                      color: s <= (hovered || rating) ? "#f0a000" : "#d1d5db",
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
+            {rating > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {["", "Плохо", "Неплохо", "Хорошо", "Отлично", "Превосходно"][rating]}
+              </p>
+            )}
+          </div>
+
+          {/* Comment */}
+          <div className="space-y-1.5">
+            <Label>Комментарий (необязательно)</Label>
+            <textarea
+              className="w-full border rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring bg-input text-foreground"
+              rows={3}
+              placeholder="Расскажите о визите..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              maxLength={1000}
+            />
+            <p className="text-xs text-muted-foreground text-right">{comment.length}/1000</p>
+          </div>
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose}>Отмена</Button>
+          <Button
+            onClick={() => mutation.mutate()}
+            disabled={mutation.isPending || rating === 0}
+            style={{ backgroundColor: CLIENT_COLOR }}
+          >
+            {mutation.isPending ? "Отправка..." : "Отправить отзыв"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -215,10 +330,10 @@ function BookingModal({
           <div className="space-y-1.5">
             <Label>Услуга</Label>
             {servicesLoading ? (
-              <div className="h-9 bg-gray-100 rounded animate-pulse" />
+              <div className="h-9 bg-muted rounded animate-pulse" />
             ) : (
               <select
-                className="w-full border rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border rounded-md px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-ring"
                 value={serviceId}
                 onChange={(e) => setServiceId(e.target.value)}
               >
@@ -275,6 +390,7 @@ export default function ClientCabinetPage() {
   const [searchInput, setSearchInput] = useState("");
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   const [bookingMaster, setBookingMaster] = useState<Master | null>(null);
+  const [reviewAppointment, setReviewAppointment] = useState<{ id: string; masterName: string } | null>(null);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     firstName: "",
@@ -392,22 +508,22 @@ export default function ClientCabinetPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ backgroundColor: PAGE_BG, color: TEXT_C }}>
       <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Profile block */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border mb-6">
+        <div className="rounded-2xl p-6 mb-6 border" style={{ backgroundColor: CARD_BG, borderColor: BORDER_C }}>
           <div className="flex items-center gap-4 mb-5">
             <div
-              className="w-14 h-14 rounded-full flex items-center justify-center text-white text-2xl font-bold"
-              style={{ backgroundColor: CLIENT_COLOR }}
+              className="w-14 h-14 rounded-full flex items-center justify-center text-white text-2xl font-bold flex-shrink-0"
+              style={{ background: `linear-gradient(135deg, ${CLIENT_COLOR}, #6366f1)`, boxShadow: `0 0 20px ${CLIENT_COLOR}55` }}
             >
               {session?.user?.login?.[0]?.toUpperCase() ?? "К"}
             </div>
             <div>
-              <h2 className="font-bold text-xl">
+              <h2 className="font-bold text-xl" style={{ color: TEXT_C }}>
                 {session?.user?.login ?? "Клиент"}
               </h2>
-              <p className="text-muted-foreground text-sm">
+              <p className="text-sm" style={{ color: MUTED_C }}>
                 Клиент с{" "}
                 {format(new Date(), "LLLL yyyy", { locale: ru })}
               </p>
@@ -417,29 +533,13 @@ export default function ClientCabinetPage() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              {
-                value: upcoming.length,
-                label: "Предстоящих",
-                color: CLIENT_COLOR,
-              },
-              {
-                value: appointments.length,
-                label: "Всего записей",
-                color: "#1a6b4a",
-              },
-              { value: 0, label: "Избранных", color: "#f0a000" },
+              { value: upcoming.length,      label: "Предстоящих",  color: CLIENT_COLOR },
+              { value: appointments.length,  label: "Всего записей", color: NEON_C },
+              { value: past.filter(a => a.status === "completed").length, label: "Завершено", color: "#f0a000" },
             ].map((s) => (
-              <div
-                key={s.label}
-                className="text-center p-3 rounded-xl bg-gray-50 border"
-              >
-                <p
-                  className="text-2xl font-bold"
-                  style={{ color: s.color }}
-                >
-                  {s.value}
-                </p>
-                <p className="text-xs text-muted-foreground">{s.label}</p>
+              <div key={s.label} className="text-center p-3 rounded-xl border" style={{ backgroundColor: CARD_BG2, borderColor: BORDER_C }}>
+                <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
+                <p className="text-xs" style={{ color: MUTED_C }}>{s.label}</p>
               </div>
             ))}
           </div>
@@ -447,15 +547,19 @@ export default function ClientCabinetPage() {
           {/* Quick actions */}
           <div className="grid grid-cols-3 gap-3 mt-5">
             {[
-              { icon: <Calendar className="h-5 w-5" />, label: "Мои записи", tab: "appointments" as ActiveTab },
-              { icon: <Search className="h-5 w-5" />, label: "Найти мастера", tab: "masters" as ActiveTab },
-              { icon: <Settings className="h-5 w-5" />, label: "Настройки", tab: "profile" as ActiveTab },
+              { icon: <Calendar className="h-5 w-5" />, label: "Мои записи",   tab: "appointments" as ActiveTab },
+              { icon: <Search className="h-5 w-5" />,   label: "Найти мастера", tab: "masters" as ActiveTab },
+              { icon: <Settings className="h-5 w-5" />, label: "Настройки",    tab: "profile" as ActiveTab },
             ].map((action) => (
               <button
                 key={action.label}
                 onClick={() => setActiveTab(action.tab)}
-                className="flex flex-col items-center gap-2 p-3 rounded-xl border bg-gray-50 hover:bg-blue-50 transition-colors text-center"
-                style={{ color: CLIENT_COLOR }}
+                className="flex flex-col items-center gap-2 p-3 rounded-xl border transition-all text-center"
+                style={{
+                  backgroundColor: activeTab === action.tab ? `${CLIENT_COLOR}22` : CARD_BG2,
+                  borderColor: activeTab === action.tab ? CLIENT_COLOR : BORDER_C,
+                  color: activeTab === action.tab ? CLIENT_COLOR : MUTED_C,
+                }}
               >
                 {action.icon}
                 <span className="text-xs font-medium">{action.label}</span>
@@ -475,11 +579,11 @@ export default function ClientCabinetPage() {
               {isLoading ? (
                 <div className="space-y-3">
                   {[1, 2].map((i) => (
-                    <div key={i} className="h-24 bg-white rounded-xl border animate-pulse" />
+                    <div key={i} className="h-24 bg-card rounded-xl border animate-pulse" />
                   ))}
                 </div>
               ) : upcoming.length === 0 ? (
-                <div className="bg-white rounded-xl p-8 border text-center text-muted-foreground">
+                <div className="bg-card rounded-xl p-8 border text-center text-muted-foreground">
                   <Calendar className="h-10 w-10 mx-auto mb-3 opacity-30" />
                   <p className="font-medium">Нет предстоящих записей</p>
                   <button
@@ -536,6 +640,11 @@ export default function ClientCabinetPage() {
                       onReschedule={() => {}}
                       onCancel={() => {}}
                       showActions={false}
+                      onReview={
+                        app.status !== "cancelled"
+                          ? () => setReviewAppointment({ id: app.id, masterName: getMasterName(app) })
+                          : undefined
+                      }
                     />
                   ))}
                 </div>
@@ -572,11 +681,11 @@ export default function ClientCabinetPage() {
             {mastersLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-48 bg-white rounded-xl border animate-pulse" />
+                  <div key={i} className="h-48 bg-card rounded-xl border animate-pulse" />
                 ))}
               </div>
             ) : masters.length === 0 ? (
-              <div className="bg-white rounded-xl p-10 border text-center text-muted-foreground">
+              <div className="bg-card rounded-xl p-10 border text-center text-muted-foreground">
                 <Search className="h-10 w-10 mx-auto mb-3 opacity-30" />
                 <p className="font-medium">
                   {searchQuery ? "Мастера не найдены" : "Каталог мастеров"}
@@ -590,7 +699,7 @@ export default function ClientCabinetPage() {
                 {masters.map((master) => (
                   <div
                     key={master.id}
-                    className="bg-white rounded-xl p-5 border shadow-sm"
+                    className="bg-card rounded-xl p-5 border shadow-sm"
                   >
                     {/* Avatar with initials */}
                     <div className="flex items-center gap-3 mb-3">
@@ -598,7 +707,7 @@ export default function ClientCabinetPage() {
                         className="w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-bold"
                         style={{
                           backgroundColor:
-                            master.type === "EMPLOYEE" ? "#1a6b4a" : "#0e7070",
+                            master.type === "EMPLOYEE" ? "#10b981" : "#06b6d4",
                         }}
                       >
                         {master.name[0]}
@@ -657,7 +766,7 @@ export default function ClientCabinetPage() {
 
         {/* Tab: Profile */}
         {activeTab === "profile" && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border">
+          <div className="bg-card rounded-2xl p-6 border">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-base">Мой профиль</h3>
               {!editing && (
@@ -674,7 +783,7 @@ export default function ClientCabinetPage() {
             {profileLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="h-10 bg-gray-100 rounded animate-pulse" />
+                  <div key={i} className="h-10 bg-muted rounded animate-pulse" />
                 ))}
               </div>
             ) : editing ? (
@@ -783,7 +892,7 @@ export default function ClientCabinetPage() {
       </div>
 
       {/* Mobile nav */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t md:hidden flex">
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border md:hidden flex">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -814,6 +923,14 @@ export default function ClientCabinetPage() {
           onClose={() => setBookingMaster(null)}
         />
       )}
+
+      {reviewAppointment && (
+        <ReviewModal
+          appointmentId={reviewAppointment.id}
+          masterName={reviewAppointment.masterName}
+          onClose={() => setReviewAppointment(null)}
+        />
+      )}
     </div>
   );
 }
@@ -825,6 +942,7 @@ function AppointmentCard({
   onReschedule,
   onCancel,
   showActions,
+  onReview,
 }: {
   app: Appointment;
   getMasterName: (a: Appointment) => string;
@@ -832,9 +950,10 @@ function AppointmentCard({
   onReschedule: () => void;
   onCancel: () => void;
   showActions: boolean;
+  onReview?: () => void;
 }) {
   return (
-    <div className="bg-white rounded-xl p-4 border shadow-sm">
+    <div className="bg-card rounded-xl p-4 border shadow-sm">
       <div className="flex items-start gap-3">
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
@@ -881,7 +1000,7 @@ function AppointmentCard({
           <Button
             size="sm"
             variant="outline"
-            className="flex-1 h-8 text-xs border-[#f0a000] text-[#f0a000] hover:bg-orange-50"
+            className="flex-1 h-8 text-xs border-[#f0a000] text-[#f0a000] hover:bg-orange-950/30"
             onClick={onReschedule}
           >
             Перенос
@@ -889,10 +1008,25 @@ function AppointmentCard({
           <Button
             size="sm"
             variant="outline"
-            className="flex-1 h-8 text-xs border-destructive text-destructive hover:bg-red-50"
+            className="flex-1 h-8 text-xs border-destructive text-destructive hover:bg-red-950/30"
             onClick={onCancel}
           >
             Отмена
+          </Button>
+        </div>
+      )}
+
+      {!showActions && onReview && (
+        <div className="mt-3">
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full h-8 text-xs gap-1.5"
+            style={{ borderColor: CLIENT_COLOR, color: CLIENT_COLOR }}
+            onClick={onReview}
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            Оставить отзыв
           </Button>
         </div>
       )}

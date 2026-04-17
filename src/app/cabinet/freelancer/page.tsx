@@ -41,7 +41,11 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { api } from "@/app/lib/client/api";
 
-const FREELANCER_COLOR = "#0e7070";
+const FREELANCER_COLOR = "#06b6d4";
+const PAGE_BG  = "#0c0812";
+const CARD_BG  = "#14101f";
+const CARD_BG2 = "#1c1630";
+const NEON_C   = "#a855f7";
 
 type Appointment = {
   id: string;
@@ -62,8 +66,8 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#f0a000",
-  confirmed: "#1a6b4a",
-  completed: "#1a5fa8",
+  confirmed: "#10b981",
+  completed: "#3b82f6",
   cancelled: "#999",
 };
 
@@ -239,12 +243,34 @@ export default function FreelancerCabinetPage() {
     },
   });
 
-  // All appointments for stats
+  // All appointments for clients tab (fetch full history with far past date)
   const { data: allAppointments = [] } = useQuery({
     queryKey: ["freelancer-appointments-all"],
     queryFn: async () => {
-      const res = await api.appointments.get({});
+      const res = await api.appointments.get({ query: { from: "2000-01-01", to: "2099-12-31" } });
       return (res.data ?? []) as unknown as Appointment[];
+    },
+    enabled: activeTab === "clients",
+  });
+
+  // Earnings analytics
+  const { data: earnings } = useQuery({
+    queryKey: ["freelancer-analytics"],
+    queryFn: async () => {
+      const res = await (api.analytics as unknown as {
+        freelancer: { get: () => Promise<{ data: unknown }> };
+      }).freelancer.get();
+      return (res.data ?? null) as {
+        revenueTotal: number;
+        revenueThisMonth: number;
+        revenuePrevMonth: number;
+        revenueThisWeek: number;
+        completedTotal: number;
+        completedThisMonth: number;
+        avgCheck: number;
+        uniqueClients: number;
+        monthlyData: { label: string; revenue: number }[];
+      } | null;
     },
   });
 
@@ -360,16 +386,6 @@ export default function FreelancerCabinetPage() {
     (a) => a.status !== "cancelled",
   );
 
-  const totalRevenue = allAppointments
-    .filter((a) => a.status === "completed" || a.status === "confirmed")
-    .reduce((sum, a) => sum + Number(a.service?.price ?? 0), 0);
-
-  const uniqueClients = new Set(
-    allAppointments
-      .filter((a) => a.client)
-      .map((a) => `${a.client!.firstName}${a.client!.lastName}`),
-  ).size;
-
   const navItems: { id: ActiveTab; icon: React.ReactNode; label: string }[] = [
     { id: "schedule", icon: <Calendar className="h-4 w-4" />, label: "Расписание" },
     { id: "clients", icon: <Users className="h-4 w-4" />, label: "Клиенты" },
@@ -378,7 +394,7 @@ export default function FreelancerCabinetPage() {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: PAGE_BG }}>
       {/* Sidebar */}
       <aside
         className="w-56 flex-shrink-0 flex flex-col text-white"
@@ -399,10 +415,12 @@ export default function FreelancerCabinetPage() {
           </div>
           <p className="font-bold text-sm">{sidebarProfile?.fullName ?? session?.user?.login ?? "Мастер"}</p>
           <p className="text-white/70 text-xs">{sidebarProfile?.specialization ?? "Самозанятый"} · {sidebarProfile?.city ?? "Москва"}</p>
-          <div className="flex items-center gap-1 mt-1">
-            <Star className="h-3 w-3 fill-yellow-300 text-yellow-300" />
-            <span className="text-xs text-yellow-300">4.8 · 96 отзывов</span>
-          </div>
+          {sidebarProfile?.rating && (
+            <div className="flex items-center gap-1 mt-1">
+              <Star className="h-3 w-3 fill-yellow-300 text-yellow-300" />
+              <span className="text-xs text-yellow-300">{sidebarProfile.rating}</span>
+            </div>
+          )}
         </div>
 
         {/* Nav */}
@@ -432,7 +450,7 @@ export default function FreelancerCabinetPage() {
         <div className="px-2 py-3 border-t border-white/10">
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
-            className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-white/10 rounded-lg w-full text-left"
+            className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-card/10 rounded-lg w-full text-left"
           >
             <LogOut className="h-4 w-4" />
             Выйти
@@ -443,28 +461,22 @@ export default function FreelancerCabinetPage() {
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Stats bar */}
-        <div className="bg-white border-b px-6 py-4 flex items-center gap-6 flex-wrap">
+        <div className="bg-card border-b border-border px-6 py-4 flex items-center gap-6 flex-wrap">
           {[
+            { value: activeAppointments.length, label: "Записей сегодня", color: FREELANCER_COLOR },
+            { value: earnings?.uniqueClients ?? "—", label: "Клиентов всего", color: "#3b82f6" },
             {
-              value: activeAppointments.length,
-              label: "Записей сегодня",
-              color: FREELANCER_COLOR,
-            },
-            {
-              value: uniqueClients,
-              label: "Клиентов",
-              color: "#1a5fa8",
-            },
-            {
-              value: `${Math.round(totalRevenue / 1000) || 0}к`,
+              value: earnings
+                ? earnings.revenueThisMonth >= 1000
+                  ? `${Math.round(earnings.revenueThisMonth / 1000)}к ₽`
+                  : `${earnings.revenueThisMonth.toLocaleString("ru-RU")} ₽`
+                : "—",
               label: "Доход/мес",
               color: "#f0a000",
             },
           ].map((stat) => (
             <div key={stat.label} className="text-center">
-              <p className="text-xl font-bold" style={{ color: stat.color }}>
-                {stat.value}
-              </p>
+              <p className="text-xl font-bold" style={{ color: stat.color }}>{stat.value}</p>
               <p className="text-xs text-muted-foreground">{stat.label}</p>
             </div>
           ))}
@@ -477,7 +489,7 @@ export default function FreelancerCabinetPage() {
             <div className="flex items-center gap-3 mb-6">
               <button
                 onClick={() => setCurrentDate((d) => subDays(d, 1))}
-                className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
+                className="p-2 rounded-lg hover:bg-muted transition-colors"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
@@ -487,7 +499,7 @@ export default function FreelancerCabinetPage() {
               </h2>
               <button
                 onClick={() => setCurrentDate((d) => addDays(d, 1))}
-                className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
+                className="p-2 rounded-lg hover:bg-muted transition-colors"
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
@@ -501,11 +513,11 @@ export default function FreelancerCabinetPage() {
                   .map((_, i) => (
                     <div
                       key={i}
-                      className="bg-white rounded-xl p-5 border h-20 animate-pulse"
+                      className="bg-card rounded-xl p-5 border h-20 animate-pulse"
                     />
                   ))
               ) : activeAppointments.length === 0 ? (
-                <div className="bg-white rounded-xl p-10 border text-center text-muted-foreground">
+                <div className="bg-card rounded-xl p-10 border text-center text-muted-foreground">
                   <Calendar className="h-10 w-10 mx-auto mb-3 opacity-30" />
                   <p className="text-lg font-medium mb-1">Записей нет</p>
                   <p className="text-sm">
@@ -517,7 +529,7 @@ export default function FreelancerCabinetPage() {
                 activeAppointments.map((app) => (
                   <div
                     key={app.id}
-                    className="bg-white rounded-xl p-5 border shadow-sm flex items-center gap-4"
+                    className="bg-card rounded-xl p-5 border shadow-sm flex items-center gap-4"
                   >
                     <div
                       className="w-1 self-stretch rounded-full flex-shrink-0"
@@ -560,7 +572,7 @@ export default function FreelancerCabinetPage() {
                           size="sm"
                           variant="outline"
                           className="text-xs h-7"
-                          style={{ borderColor: "#1a5fa8", color: "#1a5fa8" }}
+                          style={{ borderColor: "#3b82f6", color: "#3b82f6" }}
                           onClick={() => {
                             if (confirm("Завершить запись?")) completeMutation.mutate(app.id);
                           }}
@@ -573,7 +585,7 @@ export default function FreelancerCabinetPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="text-xs h-7 border-[#f0a000] text-[#f0a000] hover:bg-orange-50"
+                            className="text-xs h-7 border-[#f0a000] text-[#f0a000] hover:bg-orange-950/30"
                             onClick={() => setRescheduleId(app.id)}
                           >
                             Перенос
@@ -581,7 +593,7 @@ export default function FreelancerCabinetPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="text-xs h-7 border-destructive text-destructive hover:bg-red-50"
+                            className="text-xs h-7 border-destructive text-destructive hover:bg-red-950/30"
                             onClick={() => {
                               if (confirm("Отменить запись?")) {
                                 cancelMutation.mutate(app.id);
@@ -605,7 +617,7 @@ export default function FreelancerCabinetPage() {
           <div className="flex-1 overflow-auto p-6">
             <h2 className="font-bold text-lg mb-4">База клиентов</h2>
             {allAppointments.filter((a) => a.client).length === 0 ? (
-              <div className="bg-white rounded-xl p-10 border text-center text-muted-foreground">
+              <div className="bg-card rounded-xl p-10 border text-center text-muted-foreground">
                 <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />
                 <p className="font-medium">Клиентов пока нет</p>
               </div>
@@ -623,7 +635,7 @@ export default function FreelancerCabinetPage() {
                 ).map((client) => (
                   <div
                     key={`${client.firstName}${client.lastName}`}
-                    className="bg-white rounded-xl p-4 border shadow-sm flex items-center gap-4"
+                    className="bg-card rounded-xl p-4 border shadow-sm flex items-center gap-4"
                   >
                     <div
                       className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold"
@@ -650,54 +662,65 @@ export default function FreelancerCabinetPage() {
         {activeTab === "finances" && (
           <div className="flex-1 overflow-auto p-6">
             <h2 className="font-bold text-lg mb-4">Финансы</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+
+            {/* Earnings cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
               {[
-                {
-                  label: "Общий доход",
-                  value: `${totalRevenue.toLocaleString("ru-RU")} ₽`,
-                  color: FREELANCER_COLOR,
-                },
-                {
-                  label: "Завершённых записей",
-                  value: allAppointments.filter(
-                    (a) => a.status === "completed",
-                  ).length,
-                  color: "#1a5fa8",
-                },
-                {
-                  label: "Средний чек",
-                  value: allAppointments.filter(
-                    (a) => a.status === "completed",
-                  ).length
-                    ? `${Math.round(
-                        totalRevenue /
-                          allAppointments.filter(
-                            (a) => a.status === "completed",
-                          ).length,
-                      ).toLocaleString("ru-RU")} ₽`
-                    : "—",
-                  color: "#f0a000",
-                },
-              ].map((stat) => (
-                <div
-                  key={stat.label}
-                  className="bg-white rounded-xl p-5 border shadow-sm"
-                >
-                  <p
-                    className="text-2xl font-bold"
-                    style={{ color: stat.color }}
-                  >
-                    {stat.value}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {stat.label}
-                  </p>
+                { label: "Эта неделя",   value: `${(earnings?.revenueThisWeek ?? 0).toLocaleString("ru-RU")} ₽`, color: FREELANCER_COLOR },
+                { label: "Этот месяц",   value: `${(earnings?.revenueThisMonth ?? 0).toLocaleString("ru-RU")} ₽`, color: "#3b82f6" },
+                { label: "Средний чек",  value: earnings?.avgCheck ? `${earnings.avgCheck.toLocaleString("ru-RU")} ₽` : "—", color: "#f0a000" },
+                { label: "Всего заработано", value: `${(earnings?.revenueTotal ?? 0).toLocaleString("ru-RU")} ₽`, color: NEON_C },
+              ].map((s) => (
+                <div key={s.label} className="bg-card rounded-xl p-4 border shadow-sm">
+                  <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
                 </div>
               ))}
             </div>
 
+            {/* Secondary stats */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {[
+                { label: "Завершено записей", value: earnings?.completedTotal ?? 0, color: FREELANCER_COLOR },
+                { label: "Завершено в месяце", value: earnings?.completedThisMonth ?? 0, color: "#3b82f6" },
+                { label: "Уникальных клиентов", value: earnings?.uniqueClients ?? 0, color: "#f0a000" },
+              ].map((s) => (
+                <div key={s.label} className="bg-card rounded-xl p-4 border shadow-sm text-center">
+                  <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Bar chart — last 6 months */}
+            {earnings?.monthlyData && earnings.monthlyData.some((m) => m.revenue > 0) && (
+              <div className="bg-card rounded-xl border shadow-sm p-5 mb-4">
+                <p className="font-semibold text-sm mb-3">Доходы по месяцам</p>
+                <div className="flex items-end gap-2 h-24">
+                  {(() => {
+                    const maxRev = Math.max(...earnings.monthlyData.map((m) => m.revenue), 1);
+                    return earnings.monthlyData.map((m) => (
+                      <div key={m.label} className="flex-1 flex flex-col items-center gap-1.5">
+                        <span className="text-[10px] font-medium" style={{ color: FREELANCER_COLOR }}>
+                          {m.revenue > 0 ? `${Math.round(m.revenue / 1000)}к` : ""}
+                        </span>
+                        <div
+                          className="w-full rounded-t transition-all"
+                          style={{
+                            height: `${Math.max(4, (m.revenue / maxRev) * 64)}px`,
+                            backgroundColor: m.revenue > 0 ? FREELANCER_COLOR : "#e5e7eb",
+                          }}
+                        />
+                        <span className="text-[10px] text-muted-foreground">{m.label}</span>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            )}
+
             {/* Services list */}
-            <div className="bg-white rounded-xl border shadow-sm">
+            <div className="bg-card rounded-xl border shadow-sm">
               <div className="flex items-center justify-between px-5 py-4 border-b">
                 <h3 className="font-semibold">Мои услуги</h3>
                 <Button
@@ -715,7 +738,7 @@ export default function FreelancerCabinetPage() {
                   Услуги не добавлены
                 </div>
               ) : (
-                <div className="divide-y">
+                <div className="divide-y divide-border">
                   {services.map((s) => (
                     <div
                       key={s.id}
@@ -731,7 +754,7 @@ export default function FreelancerCabinetPage() {
                         <p className="font-semibold text-sm">
                           {Number(s.price).toLocaleString("ru-RU")} ₽
                         </p>
-                        <button onClick={() => setServiceModal({ open: true, service: s })} className="p-1 hover:text-[#0e7070]">
+                        <button onClick={() => setServiceModal({ open: true, service: s })} className="p-1 hover:text-[#06b6d4]">
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button onClick={() => { if (confirm("Удалить услугу?")) deleteServiceMutation.mutate(s.id); }} className="p-1 hover:text-red-500">
@@ -766,7 +789,7 @@ export default function FreelancerCabinetPage() {
               )}
             </div>
 
-            <div className="bg-white rounded-xl border shadow-sm p-6 space-y-4">
+            <div className="bg-card rounded-xl border shadow-sm p-6 space-y-4">
               {editingProfile ? (
                 <>
                   {[

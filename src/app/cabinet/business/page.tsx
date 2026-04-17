@@ -34,8 +34,11 @@ const HOURS = Array.from({ length: 13 }, (_, i) => i + 9);
 // Each hour row = 64px
 const ROW_H = 64;
 
-const BUSINESS_COLOR = "#4a235a";
+const BUSINESS_COLOR = "#7c3aed";
 const ACCENT_ORANGE = "#f0a000";
+const PAGE_BG  = "#0c0812";
+const CARD_BG  = "#14101f";
+const NEON_C   = "#a855f7";
 
 type ViewMode = "day" | "week";
 
@@ -89,11 +92,11 @@ function MiniCalendar({ currentDate, onDateSelect }: { currentDate: Date; onDate
   return (
     <div className="p-3 text-xs">
       <div className="flex items-center justify-between mb-2">
-        <button onClick={() => setMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))} className="p-1 hover:bg-white/10 rounded">
+        <button onClick={() => setMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))} className="p-1 hover:bg-card/10 rounded">
           <ChevronLeft className="h-3 w-3" />
         </button>
         <span className="font-semibold capitalize">{format(month, "LLLL yyyy", { locale: ru })}</span>
-        <button onClick={() => setMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))} className="p-1 hover:bg-white/10 rounded">
+        <button onClick={() => setMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))} className="p-1 hover:bg-card/10 rounded">
           <ChevronRight className="h-3 w-3" />
         </button>
       </div>
@@ -107,7 +110,7 @@ function MiniCalendar({ currentDate, onDateSelect }: { currentDate: Date; onDate
           const tod = isToday(d);
           return (
             <button key={i} onClick={() => onDateSelect(d)}
-              className="h-5 w-5 mx-auto rounded-full text-[10px] flex items-center justify-center hover:bg-white/20 transition-colors"
+              className="h-5 w-5 mx-auto rounded-full text-[10px] flex items-center justify-center hover:bg-card/20 transition-colors"
               style={{ backgroundColor: sel ? "white" : tod ? ACCENT_ORANGE : undefined, color: sel ? BUSINESS_COLOR : tod ? "white" : undefined, fontWeight: (sel || tod) ? "bold" : undefined }}>
               {d.getDate()}
             </button>
@@ -230,7 +233,7 @@ export default function BusinessCabinetPage() {
         );
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: PAGE_BG }}>
       {/* Sidebar */}
       <aside className="w-56 flex-shrink-0 flex flex-col text-white" style={{ backgroundColor: BUSINESS_COLOR }}>
         <div className="px-4 py-4 border-b border-white/10 flex items-center gap-2">
@@ -258,7 +261,7 @@ export default function BusinessCabinetPage() {
 
         <div className="px-2 py-3 border-t border-white/10">
           <button onClick={() => signOut({ callbackUrl: "/" })}
-            className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-white/10 rounded-lg w-full text-left">
+            className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-card/10 rounded-lg w-full text-left">
             <LogOut className="h-4 w-4" />Выйти
           </button>
         </div>
@@ -267,7 +270,7 @@ export default function BusinessCabinetPage() {
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
-        <div className="flex items-center gap-3 px-4 py-3 bg-white border-b shadow-sm flex-shrink-0">
+        <div className="flex items-center gap-3 px-4 py-3 bg-card border-b shadow-sm flex-shrink-0">
           <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>Сегодня</Button>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" onClick={() => navigate("prev")}><ChevronLeft className="h-4 w-4" /></Button>
@@ -305,13 +308,13 @@ export default function BusinessCabinetPage() {
           <div className="flex-1 overflow-auto">
             <div style={{ minWidth: Math.max(600, 64 + columns.length * 130) }}>
               {/* Column headers */}
-              <div className="flex sticky top-0 bg-white z-20 border-b shadow-sm">
+              <div className="flex sticky top-0 bg-card z-20 border-b shadow-sm">
                 {/* Time gutter */}
-                <div className="w-14 flex-shrink-0 border-r border-gray-200" />
+                <div className="w-14 flex-shrink-0 border-r border-purple-900/30" />
                 {columns.map((col) => (
                   <div key={col.key}
-                    className="flex-1 border-r border-gray-200 text-center text-xs min-w-[120px]"
-                    style={isToday(col.day) ? { backgroundColor: "#fffbf0" } : {}}>
+                    className="flex-1 border-r border-purple-900/30 text-center text-xs min-w-[120px]"
+                    style={isToday(col.day) ? { backgroundColor: "#1c1630" } : {}}>
                     {col.label}
                   </div>
                 ))}
@@ -322,16 +325,16 @@ export default function BusinessCabinetPage() {
                 {HOURS.map((hour) => (
                   <div key={hour} className="flex" style={{ height: ROW_H }}>
                     {/* Time label */}
-                    <div className="w-14 flex-shrink-0 border-r border-gray-200 text-[11px] text-gray-400 text-right pr-2 pt-1">
+                    <div className="w-14 flex-shrink-0 border-r border-purple-900/30 text-[11px] text-muted-foreground text-right pr-2 pt-1">
                       {hour}:00
                     </div>
                     {/* Cells */}
                     {columns.map((col) => (
                       <div key={col.key}
-                        className="flex-1 border-r border-b border-gray-100 relative min-w-[120px]"
-                        style={{ height: ROW_H, backgroundColor: isToday(col.day) ? "#fffdf5" : undefined }}>
+                        className="flex-1 border-r border-b border-purple-900/20 relative min-w-[120px]"
+                        style={{ height: ROW_H, backgroundColor: isToday(col.day) ? "#1a1228" : undefined }}>
                         {/* Half-hour divider */}
-                        <div className="absolute left-0 right-0 border-b border-gray-100 border-dashed" style={{ top: ROW_H / 2 }} />
+                        <div className="absolute left-0 right-0 border-b border-purple-900/20 border-dashed" style={{ top: ROW_H / 2 }} />
                         {/* Appointments that START in this hour */}
                         {appsFor(col.empId, col.day)
                           .filter((a) => new Date(a.datetime).getHours() === hour)

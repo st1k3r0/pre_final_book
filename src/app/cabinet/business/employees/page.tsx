@@ -32,7 +32,8 @@ import {
 import { toast } from "sonner";
 import { api } from "@/app/lib/client/api";
 
-const BUSINESS_COLOR = "#4a235a";
+const BUSINESS_COLOR = "#7c3aed";
+const PAGE_BG = "#0c0812";
 
 const STATUS_LABELS: Record<string, string> = {
   active: "Работает",
@@ -41,7 +42,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  active: "#1a6b4a",
+  active: "#10b981",
   vacation: "#f0a000",
   dismissed: "#dc2626",
 };
@@ -319,7 +320,7 @@ function EmployeeDetailModal({
                 { value: `${attendance}%`, label: "Посещаемость" },
                 { value: revenue > 0 ? `${Math.round(revenue / 1000)}к ₽` : "—", label: "Доход" },
               ].map((stat) => (
-                <div key={stat.label} className="text-center p-3 rounded-xl bg-gray-50 border">
+                <div key={stat.label} className="text-center p-3 rounded-xl bg-secondary border">
                   <p className="font-bold text-lg">{stat.value}</p>
                   <p className="text-xs text-muted-foreground">{stat.label}</p>
                 </div>
@@ -371,7 +372,7 @@ function EmployeeDetailModal({
               {employee.status === "vacation" && (
                 <Button
                   variant="outline"
-                  className="flex-1 border-[#1a6b4a] text-[#1a6b4a] hover:bg-green-50"
+                  className="flex-1 border-[#10b981] text-[#10b981] hover:bg-green-950/30"
                   disabled={returnVacationMutation.isPending}
                   onClick={() => {
                     if (confirm(`Вернуть ${employee.firstName} ${employee.lastName} с отпуска?`)) {
@@ -387,7 +388,7 @@ function EmployeeDetailModal({
               {employee.status === "dismissed" && (
                 <Button
                   variant="outline"
-                  className="flex-1 border-[#1a6b4a] text-[#1a6b4a] hover:bg-green-50"
+                  className="flex-1 border-[#10b981] text-[#10b981] hover:bg-green-950/30"
                   disabled={reactivateMutation.isPending}
                   onClick={() => {
                     if (confirm(`Восстановить ${employee.firstName} ${employee.lastName} на работе?`)) {
@@ -426,7 +427,7 @@ export default function EmployeesPage() {
   });
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: PAGE_BG }}>
       {/* Sidebar */}
       <aside
         className="w-56 flex-shrink-0 flex flex-col text-white"
@@ -475,7 +476,7 @@ export default function EmployeesPage() {
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
-        <div className="flex items-center gap-3 px-6 py-4 bg-white border-b shadow-sm">
+        <div className="flex items-center gap-3 px-6 py-4 bg-card border-b">
           <Link href="/cabinet/business">
             <Button variant="ghost" size="icon">
               <ChevronLeft className="h-4 w-4" />
@@ -491,7 +492,7 @@ export default function EmployeesPage() {
         </div>
 
         {/* Search + filter */}
-        <div className="px-6 py-4 bg-white border-b flex flex-col sm:flex-row gap-3">
+        <div className="px-6 py-4 bg-card border-b flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -518,7 +519,7 @@ export default function EmployeesPage() {
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {Array(6).fill(null).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl p-5 border h-44 animate-pulse" />
+                <div key={i} className="bg-card rounded-xl p-5 border h-44 animate-pulse" />
               ))}
             </div>
           ) : employees.length === 0 ? (
@@ -537,7 +538,7 @@ export default function EmployeesPage() {
               {employees.map((emp) => (
                 <div
                   key={emp.id}
-                  className="bg-white rounded-xl p-5 border shadow-sm hover:shadow-md transition-shadow"
+                  className="bg-card rounded-xl p-5 border shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <div
@@ -578,7 +579,7 @@ export default function EmployeesPage() {
                   <Button
                     variant="outline"
                     className="w-full mt-3 text-xs h-8"
-                    style={{ borderColor: "#1a5fa8", color: "#1a5fa8" }}
+                    style={{ borderColor: "#3b82f6", color: "#3b82f6" }}
                     onClick={() => setSelectedEmployee(emp)}
                   >
                     Подробнее →

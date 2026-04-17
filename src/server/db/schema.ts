@@ -265,6 +265,34 @@ export const favoriteMasters = pg.pgTable("favorite_masters", {
   createdAt: pg.timestamp("created_at").notNull().defaultNow(),
 });
 
+// ─── Reviews ──────────────────────────────────────────────────────────────────
+
+export const reviews = pg.pgTable("reviews", {
+  id: pg
+    .varchar("id", { length: 255 })
+    .notNull()
+    .primaryKey()
+    .$defaultFn(() => Bun.randomUUIDv7()),
+  appointmentId: pg
+    .varchar("appointment_id", { length: 255 })
+    .notNull()
+    .unique()
+    .references(() => appointments.id),
+  clientId: pg
+    .varchar("client_id", { length: 255 })
+    .notNull()
+    .references(() => clientProfiles.id),
+  employeeId: pg
+    .varchar("employee_id", { length: 255 })
+    .references(() => employeeProfiles.id),
+  freelancerId: pg
+    .varchar("freelancer_id", { length: 255 })
+    .references(() => freelancerProfiles.id),
+  rating: pg.integer("rating").notNull(),
+  comment: pg.text("comment"),
+  createdAt: pg.timestamp("created_at").notNull().defaultNow(),
+});
+
 // ─── Relations ────────────────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ one }) => ({
@@ -365,5 +393,28 @@ export const appointmentsRelations = relations(appointments, ({ one }) => ({
   service: one(services, {
     fields: [appointments.serviceId],
     references: [services.id],
+  }),
+  review: one(reviews, {
+    fields: [appointments.id],
+    references: [reviews.appointmentId],
+  }),
+}));
+
+export const reviewsRelations = relations(reviews, ({ one }) => ({
+  appointment: one(appointments, {
+    fields: [reviews.appointmentId],
+    references: [appointments.id],
+  }),
+  client: one(clientProfiles, {
+    fields: [reviews.clientId],
+    references: [clientProfiles.id],
+  }),
+  employee: one(employeeProfiles, {
+    fields: [reviews.employeeId],
+    references: [employeeProfiles.id],
+  }),
+  freelancer: one(freelancerProfiles, {
+    fields: [reviews.freelancerId],
+    references: [freelancerProfiles.id],
   }),
 }));

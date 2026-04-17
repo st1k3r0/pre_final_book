@@ -18,7 +18,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/app/lib/client/api";
 
-const BUSINESS_COLOR = "#4a235a";
+const BUSINESS_COLOR = "#7c3aed";
+const PAGE_BG = "#0c0812";
 
 type AnalyticsData = {
   totalRevenue: number;
@@ -53,8 +54,8 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#f0a000",
-  confirmed: "#1a6b4a",
-  completed: "#1a5fa8",
+  confirmed: "#10b981",
+  completed: "#3b82f6",
   cancelled: "#dc2626",
 };
 
@@ -150,7 +151,7 @@ export default function FinancesPage() {
   const totalRevenue = analytics?.totalRevenue ?? 0;
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: PAGE_BG }}>
       {/* Sidebar */}
       <aside
         className="w-56 flex-shrink-0 flex flex-col text-white"
@@ -194,7 +195,7 @@ export default function FinancesPage() {
 
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex items-center gap-3 px-6 py-4 bg-white border-b shadow-sm">
+        <div className="flex items-center gap-3 px-6 py-4 bg-card border-b">
           <h1 className="font-bold text-lg flex-1">Финансы</h1>
         </div>
 
@@ -203,7 +204,7 @@ export default function FinancesPage() {
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {Array(3).fill(null).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl p-5 border h-28 animate-pulse" />
+                <div key={i} className="bg-card rounded-xl p-5 border h-28 animate-pulse" />
               ))}
             </div>
           ) : (
@@ -219,7 +220,7 @@ export default function FinancesPage() {
                   label: "Выручка за месяц",
                   value: `${fmt(thisMonthRevenue)} ₽`,
                   icon: <CreditCard className="h-5 w-5" />,
-                  color: "#1a6b4a",
+                  color: "#10b981",
                 },
                 {
                   label: "Средний чек",
@@ -230,7 +231,7 @@ export default function FinancesPage() {
               ].map((s) => (
                 <div
                   key={s.label}
-                  className="bg-white rounded-xl p-5 border shadow-sm flex items-center gap-4"
+                  className="bg-card rounded-xl p-5 border shadow-sm flex items-center gap-4"
                 >
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0"
@@ -250,14 +251,14 @@ export default function FinancesPage() {
           {/* Two columns: employee breakdown + transactions */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Employee revenue */}
-            <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+            <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b">
                 <h2 className="font-semibold text-base">Выручка по сотрудникам</h2>
               </div>
               {isLoading ? (
                 <div className="p-4 space-y-3">
                   {Array(4).fill(null).map((_, i) => (
-                    <div key={i} className="h-10 bg-gray-100 rounded animate-pulse" />
+                    <div key={i} className="h-10 bg-muted rounded animate-pulse" />
                   ))}
                 </div>
               ) : employeeStats.length === 0 ? (
@@ -290,14 +291,14 @@ export default function FinancesPage() {
             </div>
 
             {/* Recent transactions */}
-            <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+            <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b">
                 <h2 className="font-semibold text-base">Последние транзакции</h2>
               </div>
               {isLoading ? (
                 <div className="p-4 space-y-3">
                   {Array(5).fill(null).map((_, i) => (
-                    <div key={i} className="h-10 bg-gray-100 rounded animate-pulse" />
+                    <div key={i} className="h-10 bg-muted rounded animate-pulse" />
                   ))}
                 </div>
               ) : transactions.length === 0 ? (

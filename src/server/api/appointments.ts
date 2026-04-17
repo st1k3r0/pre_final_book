@@ -1,7 +1,7 @@
 import Elysia from "elysia";
 import z from "zod/v4";
 import { db } from "../db";
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import {
   appointments,
   businessProfiles,
@@ -10,6 +10,19 @@ import {
   freelancerProfiles,
 } from "../db/schema";
 import { userService } from "./user";
+
+/** Auto-complete any confirmed/pending appointments whose end time has passed */
+async function autoCompletePassed() {
+  await db
+    .update(appointments)
+    .set({ status: "completed" })
+    .where(
+      and(
+        inArray(appointments.status, ["pending", "confirmed"]),
+        sql`${appointments.datetime} + (${appointments.durationMinutes} * interval '1 minute') < now()`,
+      ),
+    );
+}
 
 export const appointmentsRouter = new Elysia({ prefix: "/appointments" })
   .use(userService)
@@ -22,6 +35,9 @@ export const appointmentsRouter = new Elysia({ prefix: "/appointments" })
         set.status = 401;
         return { code: 401, message: "Не авторизован" };
       }
+
+      // Auto-complete appointments whose time + duration has passed
+      await autoCompletePassed();
 
       const { from, to } = query;
       const fromDate = from ? new Date(from) : new Date();
@@ -212,9 +228,15 @@ export const appointmentsRouter = new Elysia({ prefix: "/appointments" })
         return { code: 401, message: "Не авторизован" };
       }
 
+      const newDatetime = new Date(body.datetime);
+      if (newDatetime <= new Date()) {
+        set.status = 400;
+        return { code: 400, message: "Нельзя перенести запись на прошедшее время" };
+      }
+
       await db
         .update(appointments)
-        .set({ datetime: new Date(body.datetime) })
+        .set({ datetime: newDatetime })
         .where(eq(appointments.id, params.id));
 
       return { success: true };

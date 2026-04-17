@@ -31,7 +31,8 @@ import {
 import { toast } from "sonner";
 import { api } from "@/app/lib/client/api";
 
-const BUSINESS_COLOR = "#4a235a";
+const BUSINESS_COLOR = "#7c3aed";
+const PAGE_BG = "#0c0812";
 
 type Service = {
   id: string;
@@ -285,12 +286,12 @@ export default function ServicesPage() {
   });
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: PAGE_BG }}>
       <Sidebar activeHref={pathname} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
-        <div className="flex items-center gap-3 px-6 py-4 bg-white border-b shadow-sm">
+        <div className="flex items-center gap-3 px-6 py-4 bg-card border-b">
           <h1 className="font-bold text-lg flex-1">Услуги</h1>
           <Button
             className="gap-2"
@@ -307,7 +308,7 @@ export default function ServicesPage() {
           {isLoading ? (
             <div className="space-y-3">
               {Array(5).fill(null).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl p-4 border h-20 animate-pulse" />
+                <div key={i} className="bg-card rounded-xl p-4 border h-20 animate-pulse" />
               ))}
             </div>
           ) : services.length === 0 ? (
@@ -323,12 +324,12 @@ export default function ServicesPage() {
               </Button>
             </div>
           ) : (
-            <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-              <div className="divide-y divide-gray-100">
+            <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
+              <div className="divide-y divide-border">
                 {services.map((service) => (
                   <div
                     key={service.id}
-                    className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-4 px-5 py-4 hover:bg-secondary transition-colors"
                   >
                     {/* Info */}
                     <div className="flex-1 min-w-0">

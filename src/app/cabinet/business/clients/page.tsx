@@ -19,7 +19,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { api } from "@/app/lib/client/api";
 
-const BUSINESS_COLOR = "#4a235a";
+const BUSINESS_COLOR = "#7c3aed";
+const PAGE_BG = "#0c0812";
 
 type BusinessClient = {
   clientId: string;
@@ -102,17 +103,17 @@ export default function ClientsPage() {
   });
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: PAGE_BG }}>
       <Sidebar activeHref={pathname} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
-        <div className="flex items-center gap-3 px-6 py-4 bg-white border-b shadow-sm">
+        <div className="flex items-center gap-3 px-6 py-4 bg-card border-b">
           <h1 className="font-bold text-lg flex-1">Клиенты</h1>
         </div>
 
         {/* Search */}
-        <div className="px-6 py-4 bg-white border-b">
+        <div className="px-6 py-4 bg-card border-b">
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -129,7 +130,7 @@ export default function ClientsPage() {
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {Array(6).fill(null).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl p-5 border h-40 animate-pulse" />
+                <div key={i} className="bg-card rounded-xl p-5 border h-40 animate-pulse" />
               ))}
             </div>
           ) : clients.length === 0 ? (
@@ -147,7 +148,7 @@ export default function ClientsPage() {
               {clients.map((client) => (
                 <div
                   key={client.clientId}
-                  className="bg-white rounded-xl p-5 border shadow-sm hover:shadow-md transition-shadow"
+                  className="bg-card rounded-xl p-5 border shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <div

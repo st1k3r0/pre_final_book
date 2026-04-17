@@ -83,7 +83,8 @@ export default function RegisterClientPage() {
       });
 
       if (res.error) {
-        const msg = (res.error.value as { message?: string })?.message ?? "Ошибка регистрации";
+        const val = res.error.value as { message?: string; summary?: string } | null;
+        const msg = val?.message ?? val?.summary ?? "Ошибка регистрации";
         setErrors({ general: msg });
         return;
       }
@@ -106,26 +107,28 @@ export default function RegisterClientPage() {
 
   const inputCls = (field: keyof FormData) => (errors[field] ? "border-destructive" : "");
 
+  const COLOR = "#3b82f6";
+
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#f0f5fc" }}>
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header
-        className="flex items-center justify-between px-6 py-4"
-        style={{ backgroundColor: "#1a5fa8" }}
+        className="flex items-center justify-between px-6 py-4 border-b"
+        style={{ backgroundColor: "#0c0812", borderColor: "rgba(168,85,247,0.22)" }}
       >
-        <Link href="/" className="flex items-center gap-2 text-xl font-bold text-white">
-          <Scissors className="h-5 w-5" />
+        <Link href="/" className="flex items-center gap-2 text-xl font-bold text-foreground">
+          <Scissors className="h-5 w-5" style={{ color: COLOR }} />
           BookApp
         </Link>
         <Link href="/login?role=CLIENT">
-          <Button variant="outline" className="text-white border-white/40 bg-transparent hover:bg-white/10 text-sm">
+          <Button variant="outline" className="text-sm">
             Уже есть аккаунт? Войти →
           </Button>
         </Link>
       </header>
 
       <div className="max-w-3xl mx-auto px-4 py-10">
-        <h1 className="text-2xl font-bold mb-1 flex items-center gap-2" style={{ color: "#1a5fa8" }}>
+        <h1 className="text-2xl font-bold mb-1 flex items-center gap-2" style={{ color: COLOR }}>
           <User className="h-6 w-6" />
           Регистрация клиента
         </h1>
@@ -136,8 +139,8 @@ export default function RegisterClientPage() {
         <form onSubmit={handleSubmit}>
           <div className="grid md:grid-cols-2 gap-6">
             {/* Left */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border space-y-4">
-              <h2 className="font-semibold" style={{ color: "#1a5fa8" }}>Личные данные</h2>
+            <div className="bg-card rounded-2xl p-6 border space-y-4">
+              <h2 className="font-semibold" style={{ color: COLOR }}>Личные данные</h2>
 
               <div className="space-y-1.5">
                 <Label htmlFor="firstName">Имя *</Label>
@@ -198,7 +201,7 @@ export default function RegisterClientPage() {
                         value={g}
                         checked={form.gender === g}
                         onChange={() => setForm((prev) => ({ ...prev, gender: g }))}
-                        className="accent-[#1a5fa8]"
+                        className="accent-[#3b82f6]"
                       />
                       {g === "male" ? "Мужской" : g === "female" ? "Женский" : "Не указывать"}
                     </label>
@@ -208,8 +211,8 @@ export default function RegisterClientPage() {
             </div>
 
             {/* Right */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border space-y-4">
-              <h2 className="font-semibold" style={{ color: "#1a5fa8" }}>Аккаунт</h2>
+            <div className="bg-card rounded-2xl p-6 border space-y-4">
+              <h2 className="font-semibold" style={{ color: COLOR }}>Аккаунт</h2>
 
               <div className="space-y-1.5">
                 <Label htmlFor="loginClient">Логин *</Label>
@@ -288,7 +291,7 @@ export default function RegisterClientPage() {
               type="submit"
               disabled={loading || !agreed}
               className="w-full h-12 text-base font-semibold"
-              style={{ backgroundColor: "#1a5fa8" }}
+              style={{ backgroundColor: COLOR }}
             >
               {loading ? "Регистрация..." : (
                 <span className="flex items-center gap-2"><CheckCircle className="h-4 w-4" />Создать аккаунт</span>

@@ -21,7 +21,7 @@ import {
   Star,
   Pencil,
   Building2,
-  Phone,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +37,11 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { api } from "@/app/lib/client/api";
 
-const EMPLOYEE_COLOR = "#1a6b4a";
+const EMPLOYEE_COLOR = "#10b981";
+const PAGE_BG  = "#0c0812";
+const CARD_BG  = "#14101f";
+const CARD_BG2 = "#1c1630";
+const NEON_C   = "#a855f7";
 
 type Appointment = {
   id: string;
@@ -58,8 +62,8 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#f0a000",
-  confirmed: "#1a6b4a",
-  completed: "#1a5fa8",
+  confirmed: "#10b981",
+  completed: "#3b82f6",
   cancelled: "#999",
 };
 
@@ -131,6 +135,7 @@ function RescheduleModal({
 }
 
 type EmployeeProfile = {
+  id: string;
   firstName: string;
   lastName: string;
   middleName: string | null;
@@ -199,7 +204,7 @@ function ProfileDialog({ onClose }: { onClose: () => void }) {
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-10 bg-gray-100 rounded animate-pulse" />
+              <div key={i} className="h-10 bg-muted rounded animate-pulse" />
             ))}
           </div>
         ) : editing ? (
@@ -273,11 +278,123 @@ function ProfileDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
+type Review = {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  clientName: string;
+  serviceName: string | null;
+};
+
+function ReviewsDialog({ employeeId, onClose }: { employeeId: string; onClose: () => void }) {
+  const { data: reviewsList = [], isLoading } = useQuery({
+    queryKey: ["employee-reviews", employeeId],
+    queryFn: async () => {
+      const res = await (api as unknown as {
+        reviews: { get: (opts: { query: { employeeId: string } }) => Promise<{ data: unknown }> };
+      }).reviews.get({ query: { employeeId } });
+      return (res.data ?? []) as Review[];
+    },
+    enabled: !!employeeId,
+  });
+
+  const avg = reviewsList.length
+    ? (reviewsList.reduce((s, r) => s + r.rating, 0) / reviewsList.length).toFixed(1)
+    : null;
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" style={{ color: EMPLOYEE_COLOR }} />
+            Мои отзывы
+          </DialogTitle>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-20 bg-muted rounded-xl animate-pulse" />
+            ))}
+          </div>
+        ) : reviewsList.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <Star className="h-10 w-10 mx-auto mb-3 opacity-20" />
+            <p className="font-medium">Отзывов пока нет</p>
+            <p className="text-sm mt-1">Отзывы появятся после завершения записей</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Summary */}
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-secondary border">
+              <div className="text-3xl font-bold" style={{ color: EMPLOYEE_COLOR }}>{avg}</div>
+              <div>
+                <div className="flex gap-0.5 mb-0.5">
+                  {[1,2,3,4,5].map((s) => (
+                    <Star
+                      key={s}
+                      className="h-4 w-4"
+                      style={{
+                        fill: s <= Math.round(Number(avg)) ? "#f0a000" : "transparent",
+                        color: s <= Math.round(Number(avg)) ? "#f0a000" : "#d1d5db",
+                      }}
+                    />
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">{reviewsList.length} отзывов</p>
+              </div>
+            </div>
+
+            {/* List */}
+            {reviewsList.map((r) => (
+              <div key={r.id} className="p-4 rounded-xl border bg-card space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-medium text-sm">{r.clientName}</p>
+                    {r.serviceName && (
+                      <p className="text-xs text-muted-foreground">{r.serviceName}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {[1,2,3,4,5].map((s) => (
+                      <Star
+                        key={s}
+                        className="h-3.5 w-3.5"
+                        style={{
+                          fill: s <= r.rating ? "#f0a000" : "transparent",
+                          color: s <= r.rating ? "#f0a000" : "#d1d5db",
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                {r.comment && (
+                  <p className="text-sm text-gray-700 leading-relaxed">«{r.comment}»</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {new Date(r.createdAt).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Закрыть</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function EmployeeCabinetPage() {
   const { data: session } = useSession();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [showReviews, setShowReviews] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: empProfile } = useQuery({
@@ -285,6 +402,23 @@ export default function EmployeeCabinetPage() {
     queryFn: async () => {
       const res = await api.profile.get();
       return (res.data ?? null) as unknown as EmployeeProfile | null;
+    },
+  });
+
+  const { data: earnings } = useQuery({
+    queryKey: ["employee-analytics"],
+    queryFn: async () => {
+      const res = await (api.analytics as unknown as {
+        employee: { get: () => Promise<{ data: unknown }> };
+      }).employee.get();
+      return (res.data ?? null) as {
+        revenueThisMonth: number;
+        revenueThisWeek: number;
+        completedTotal: number;
+        completedThisMonth: number;
+        avgCheck: number;
+        monthlyData: { label: string; revenue: number }[];
+      } | null;
     },
   });
 
@@ -359,13 +493,13 @@ export default function EmployeeCabinetPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ backgroundColor: PAGE_BG }}>
       {/* Header */}
       <header
-        className="flex items-center justify-between px-6 py-4"
-        style={{ backgroundColor: EMPLOYEE_COLOR }}
+        className="flex items-center justify-between px-6 py-4 border-b"
+        style={{ backgroundColor: CARD_BG, borderColor: `${EMPLOYEE_COLOR}44` }}
       >
-        <div className="flex items-center gap-2 text-white font-bold text-lg">
+        <div className="flex items-center gap-2 font-bold text-lg" style={{ color: EMPLOYEE_COLOR }}>
           <Scissors className="h-5 w-5" />
           {empProfile?.business?.companyName
             ? `BookApp — ${empProfile.business.companyName}`
@@ -373,7 +507,20 @@ export default function EmployeeCabinetPage() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            className="flex items-center gap-2 text-white/80 hover:text-white text-sm transition-colors"
+            className="flex items-center gap-2 text-sm transition-colors"
+            style={{ color: "rgba(240,237,232,0.65)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = EMPLOYEE_COLOR)}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(240,237,232,0.65)")}
+            onClick={() => setShowReviews(true)}
+          >
+            <MessageSquare className="h-4 w-4" />
+            Отзывы
+          </button>
+          <button
+            className="flex items-center gap-2 text-sm transition-colors"
+            style={{ color: "rgba(240,237,232,0.65)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = EMPLOYEE_COLOR)}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(240,237,232,0.65)")}
             onClick={() => setShowProfile(true)}
           >
             <User className="h-4 w-4" />
@@ -381,7 +528,8 @@ export default function EmployeeCabinetPage() {
           </button>
           <Button
             variant="ghost"
-            className="text-white hover:bg-white/10"
+            size="sm"
+            className="text-muted-foreground hover:text-destructive"
             onClick={() => signOut({ callbackUrl: "/" })}
           >
             <LogOut className="h-4 w-4 mr-2" />
@@ -392,7 +540,7 @@ export default function EmployeeCabinetPage() {
 
       <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Profile block */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border mb-6 flex items-center gap-5">
+        <div className="bg-card rounded-2xl p-6 border mb-6 flex items-center gap-5">
           <div
             className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-bold flex-shrink-0"
             style={{ backgroundColor: EMPLOYEE_COLOR }}
@@ -424,43 +572,78 @@ export default function EmployeeCabinetPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-3 gap-4 mb-4">
           {[
+            { value: activeAppointments.length, label: "Сегодня", color: EMPLOYEE_COLOR },
+            { value: weekAppointments.filter((a) => a.status !== "cancelled").length, label: "Неделя", color: "#3b82f6" },
             {
-              value: activeAppointments.length,
-              label: "Сегодня",
-              color: EMPLOYEE_COLOR,
+              value: earnings
+                ? earnings.revenueThisMonth >= 1000
+                  ? `${Math.round(earnings.revenueThisMonth / 1000)}к ₽`
+                  : `${earnings.revenueThisMonth.toLocaleString("ru-RU")} ₽`
+                : "—",
+              label: "Доход/мес",
+              color: "#f0a000",
             },
-            {
-              value: weekAppointments.filter((a) => a.status !== "cancelled")
-                .length,
-              label: "Неделя",
-              color: "#1a5fa8",
-            },
-            { value: "18к", label: "Доход/мес", color: "#f0a000" },
           ].map((stat) => (
-            <div
-              key={stat.label}
-              className="bg-white rounded-xl p-4 border shadow-sm text-center"
-            >
-              <p
-                className="text-2xl font-bold"
-                style={{ color: stat.color }}
-              >
-                {stat.value}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {stat.label}
-              </p>
+            <div key={stat.label} className="bg-card rounded-xl p-4 border shadow-sm text-center">
+              <p className="text-2xl font-bold" style={{ color: stat.color }}>{stat.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
             </div>
           ))}
         </div>
+
+        {/* Earnings detail */}
+        {earnings && (
+          <div className="bg-card rounded-xl border shadow-sm mb-6 overflow-hidden">
+            <div className="px-5 py-3 border-b">
+              <p className="font-semibold text-sm">Мои заработки</p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0">
+              {[
+                { label: "Эта неделя", value: `${earnings.revenueThisWeek.toLocaleString("ru-RU")} ₽`, color: EMPLOYEE_COLOR },
+                { label: "Этот месяц", value: `${earnings.revenueThisMonth.toLocaleString("ru-RU")} ₽`, color: "#3b82f6" },
+                { label: "Средний чек", value: earnings.avgCheck ? `${earnings.avgCheck.toLocaleString("ru-RU")} ₽` : "—", color: "#f0a000" },
+                { label: "Завершено", value: `${earnings.completedTotal} записей`, color: NEON_C },
+              ].map((s) => (
+                <div key={s.label} className="px-4 py-3 text-center">
+                  <p className="font-bold text-base" style={{ color: s.color }}>{s.value}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+                </div>
+              ))}
+            </div>
+            {/* Mini bar chart */}
+            {earnings.monthlyData.some((m) => m.revenue > 0) && (
+              <div className="px-5 pb-4 pt-2">
+                <p className="text-xs text-muted-foreground mb-2">Последние 6 месяцев</p>
+                <div className="flex items-end gap-1.5 h-16">
+                  {(() => {
+                    const maxRev = Math.max(...earnings.monthlyData.map((m) => m.revenue), 1);
+                    return earnings.monthlyData.map((m) => (
+                      <div key={m.label} className="flex-1 flex flex-col items-center gap-1">
+                        <div
+                          className="w-full rounded-t"
+                          style={{
+                            height: `${Math.max(4, (m.revenue / maxRev) * 52)}px`,
+                            backgroundColor: m.revenue > 0 ? EMPLOYEE_COLOR : "#e5e7eb",
+                            opacity: m.revenue > 0 ? 1 : 0.4,
+                          }}
+                        />
+                        <span className="text-[9px] text-muted-foreground">{m.label}</span>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Date navigation */}
         <div className="flex items-center gap-3 mb-4">
           <button
             onClick={() => setCurrentDate((d) => subDays(d, 1))}
-            className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
+            className="p-2 rounded-lg hover:bg-muted transition-colors"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -472,7 +655,7 @@ export default function EmployeeCabinetPage() {
           </h3>
           <button
             onClick={() => setCurrentDate((d) => addDays(d, 1))}
-            className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
+            className="p-2 rounded-lg hover:bg-muted transition-colors"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -486,11 +669,11 @@ export default function EmployeeCabinetPage() {
               .map((_, i) => (
                 <div
                   key={i}
-                  className="bg-white rounded-xl p-5 border h-20 animate-pulse"
+                  className="bg-card rounded-xl p-5 border h-20 animate-pulse"
                 />
               ))
           ) : activeAppointments.length === 0 ? (
-            <div className="bg-white rounded-xl p-10 border text-center text-muted-foreground">
+            <div className="bg-card rounded-xl p-10 border text-center text-muted-foreground">
               <p className="text-lg font-medium mb-1">Записей нет</p>
               <p className="text-sm">
                 На{" "}
@@ -502,7 +685,7 @@ export default function EmployeeCabinetPage() {
             activeAppointments.map((app) => (
               <div
                 key={app.id}
-                className="bg-white rounded-xl p-5 border shadow-sm flex items-center gap-4"
+                className="bg-card rounded-xl p-5 border shadow-sm flex items-center gap-4"
               >
                 {/* Color indicator */}
                 <div
@@ -548,7 +731,7 @@ export default function EmployeeCabinetPage() {
                       size="sm"
                       variant="outline"
                       className="text-xs h-7"
-                      style={{ borderColor: "#1a5fa8", color: "#1a5fa8" }}
+                      style={{ borderColor: "#3b82f6", color: "#3b82f6" }}
                       onClick={() => {
                         if (confirm("Завершить запись?")) completeMutation.mutate(app.id);
                       }}
@@ -561,7 +744,7 @@ export default function EmployeeCabinetPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-xs h-7 border-[#f0a000] text-[#f0a000] hover:bg-orange-50"
+                        className="text-xs h-7 border-[#f0a000] text-[#f0a000] hover:bg-orange-950/30"
                         onClick={() => setRescheduleId(app.id)}
                       >
                         Перенос
@@ -569,7 +752,7 @@ export default function EmployeeCabinetPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-xs h-7 border-destructive text-destructive hover:bg-red-50"
+                        className="text-xs h-7 border-destructive text-destructive hover:bg-red-950/30"
                         onClick={() => {
                           if (confirm("Отменить запись? Клиент будет уведомлён.")) {
                             cancelMutation.mutate(app.id);
@@ -596,6 +779,13 @@ export default function EmployeeCabinetPage() {
 
       {showProfile && (
         <ProfileDialog onClose={() => setShowProfile(false)} />
+      )}
+
+      {showReviews && empProfile && (
+        <ReviewsDialog
+          employeeId={empProfile.id}
+          onClose={() => setShowReviews(false)}
+        />
       )}
     </div>
   );

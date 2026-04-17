@@ -10,6 +10,7 @@ import { mastersRouter } from "./masters";
 import { profileRouter } from "./profile";
 import { analyticsRouter } from "./analytics";
 import { businessClientsRouter } from "./businessClients";
+import { reviewsRouter } from "./reviews";
 
 export const app = new Elysia({ prefix: "/api" })
   .use(userRouter)
@@ -21,7 +22,8 @@ export const app = new Elysia({ prefix: "/api" })
   .use(mastersRouter)
   .use(profileRouter)
   .use(analyticsRouter)
-  .use(businessClientsRouter);
+  .use(businessClientsRouter)
+  .use(reviewsRouter);
 
 export const api = treaty(app).api;
 

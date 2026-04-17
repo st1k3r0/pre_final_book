@@ -13,10 +13,10 @@ import { toast } from "sonner";
 type RoleTab = "BUSINESS" | "CLIENT" | "EMPLOYEE" | "FREELANCER";
 
 const TABS: { id: RoleTab; label: string; color: string }[] = [
-  { id: "BUSINESS", label: "Бизнес", color: "#4a235a" },
-  { id: "CLIENT", label: "Клиент", color: "#1a5fa8" },
-  { id: "EMPLOYEE", label: "Сотрудник", color: "#1a6b4a" },
-  { id: "FREELANCER", label: "Фрилансер", color: "#0e7070" },
+  { id: "BUSINESS",   label: "Бизнес",    color: "#7c3aed" },
+  { id: "CLIENT",     label: "Клиент",    color: "#3b82f6" },
+  { id: "EMPLOYEE",   label: "Сотрудник", color: "#10b981" },
+  { id: "FREELANCER", label: "Фрилансер", color: "#06b6d4" },
 ];
 
 const REDIRECT: Record<RoleTab, string> = {
@@ -200,19 +200,23 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-muted-foreground mt-6">
             Нет аккаунта?{" "}
-            <Link
-              href={
-                role === "BUSINESS"
-                  ? "/register/business"
-                  : role === "CLIENT"
-                    ? "/register/client"
-                    : "/register/freelancer"
-              }
-              className="font-medium hover:underline"
-              style={{ color: activeColor }}
-            >
-              Зарегистрироваться
-            </Link>
+            {role === "EMPLOYEE" ? (
+              <span className="font-medium">Обратитесь к своему работодателю</span>
+            ) : (
+              <Link
+                href={
+                  role === "BUSINESS"
+                    ? "/register/business"
+                    : role === "CLIENT"
+                      ? "/register/client"
+                      : "/register/freelancer"
+                }
+                className="font-medium hover:underline"
+                style={{ color: activeColor }}
+              >
+                Зарегистрироваться
+              </Link>
+            )}
           </p>
         </div>
       </div>

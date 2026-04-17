@@ -15,19 +15,25 @@ import {
   CheckCircle,
   XCircle,
   TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/app/lib/client/api";
 
-const BUSINESS_COLOR = "#4a235a";
+const BUSINESS_COLOR = "#7c3aed";
+const NEON_C = "#a855f7";
 
 type AnalyticsData = {
   totalAppointments: number;
   confirmedAppointments: number;
   cancelledAppointments: number;
   totalRevenue: number;
+  revenueThisMonth: number;
+  revenuePrevMonth: number;
+  revenueThisWeek: number;
   totalClients: number;
   totalEmployees: number;
+  monthlyData: { label: string; revenue: number }[];
   recentAppointments: Array<{
     id: string;
     datetime: string;
@@ -47,8 +53,8 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#f0a000",
-  confirmed: "#1a6b4a",
-  completed: "#1a5fa8",
+  confirmed: "#10b981",
+  completed: "#3b82f6",
   cancelled: "#dc2626",
 };
 
@@ -95,7 +101,7 @@ function Sidebar({ activeHref }: { activeHref: string }) {
       <div className="px-2 py-3 border-t border-white/10">
         <button
           onClick={() => signOut({ callbackUrl: "/" })}
-          className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-white/10 rounded-lg w-full text-left"
+          className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-card/10 rounded-lg w-full text-left"
         >
           <LogOut className="h-4 w-4" />
           Выйти
@@ -138,7 +144,7 @@ export default function AnalyticsPage() {
           label: "Подтверждено",
           value: data.confirmedAppointments,
           icon: <CheckCircle className="h-5 w-5" />,
-          color: "#1a6b4a",
+          color: "#10b981",
         },
         {
           label: "Отменено",
@@ -156,24 +162,24 @@ export default function AnalyticsPage() {
           label: "Клиентов",
           value: data.totalClients,
           icon: <Users className="h-5 w-5" />,
-          color: "#1a5fa8",
+          color: "#3b82f6",
         },
         {
           label: "Сотрудников",
           value: data.totalEmployees,
           icon: <Users className="h-5 w-5" />,
-          color: "#6b21a8",
+          color: NEON_C,
         },
       ]
     : [];
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-secondary overflow-hidden">
       <Sidebar activeHref={pathname} />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: "#0c0812" }}>
         {/* Top bar */}
-        <div className="flex items-center gap-3 px-6 py-4 bg-white border-b shadow-sm">
+        <div className="flex items-center gap-3 px-6 py-4 bg-card border-b">
           <h1 className="font-bold text-lg flex-1">Аналитика</h1>
         </div>
 
@@ -183,33 +189,101 @@ export default function AnalyticsPage() {
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {Array(6).fill(null).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl p-5 border h-28 animate-pulse" />
+                <div key={i} className="bg-card rounded-xl p-5 border h-28 animate-pulse" />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {stats.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="bg-white rounded-xl p-5 border shadow-sm flex items-center gap-4"
-                >
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {stats.map((stat) => (
                   <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0"
-                    style={{ backgroundColor: stat.color }}
+                    key={stat.label}
+                    className="bg-card rounded-xl p-5 border shadow-sm flex items-center gap-4"
                   >
-                    {stat.icon}
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0"
+                      style={{ backgroundColor: stat.color }}
+                    >
+                      {stat.icon}
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{stat.value}</p>
+                      <p className="text-sm text-muted-foreground">{stat.label}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold">{stat.value}</p>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+                ))}
+              </div>
+
+              {/* Revenue period breakdown */}
+              {data && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {[
+                    { label: "Эта неделя", value: data.revenueThisWeek, color: BUSINESS_COLOR },
+                    {
+                      label: "Этот месяц",
+                      value: data.revenueThisMonth,
+                      color: "#10b981",
+                      sub: data.revenuePrevMonth > 0
+                        ? (() => {
+                            const diff = data.revenueThisMonth - data.revenuePrevMonth;
+                            const pct = Math.round(Math.abs(diff) / data.revenuePrevMonth * 100);
+                            return { diff, pct };
+                          })()
+                        : null,
+                    },
+                    { label: "За всё время", value: data.totalRevenue, color: "#f0a000" },
+                  ].map((s) => (
+                    <div key={s.label} className="bg-card rounded-xl p-5 border shadow-sm">
+                      <p className="text-sm text-muted-foreground mb-1">{s.label}</p>
+                      <p className="text-2xl font-bold" style={{ color: s.color }}>
+                        {s.value.toLocaleString("ru-RU")} ₽
+                      </p>
+                      {"sub" in s && s.sub && (
+                        <div className="flex items-center gap-1 mt-1">
+                          {s.sub.diff >= 0
+                            ? <TrendingUp className="h-3.5 w-3.5 text-green-500" />
+                            : <TrendingDown className="h-3.5 w-3.5 text-red-500" />}
+                          <span className={`text-xs font-medium ${s.sub.diff >= 0 ? "text-green-600" : "text-red-600"}`}>
+                            {s.sub.diff >= 0 ? "+" : ""}{s.sub.pct}% к прошлому месяцу
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Bar chart */}
+              {data?.monthlyData && data.monthlyData.some((m) => m.revenue > 0) && (
+                <div className="bg-card rounded-xl border shadow-sm p-5">
+                  <p className="font-semibold text-sm mb-3">Выручка по месяцам</p>
+                  <div className="flex items-end gap-2 h-28">
+                    {(() => {
+                      const maxRev = Math.max(...data.monthlyData.map((m) => m.revenue), 1);
+                      return data.monthlyData.map((m) => (
+                        <div key={m.label} className="flex-1 flex flex-col items-center gap-1.5">
+                          <span className="text-[10px] font-medium" style={{ color: BUSINESS_COLOR }}>
+                            {m.revenue > 0 ? `${Math.round(m.revenue / 1000)}к` : ""}
+                          </span>
+                          <div
+                            className="w-full rounded-t transition-all"
+                            style={{
+                              height: `${Math.max(4, (m.revenue / maxRev) * 80)}px`,
+                              backgroundColor: m.revenue > 0 ? BUSINESS_COLOR : "#e5e7eb",
+                            }}
+                          />
+                          <span className="text-[10px] text-muted-foreground">{m.label}</span>
+                        </div>
+                      ));
+                    })()}
                   </div>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
 
           {/* Recent appointments table */}
-          <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b">
               <h2 className="font-semibold text-base">Последние записи</h2>
             </div>
@@ -217,7 +291,7 @@ export default function AnalyticsPage() {
             {isLoading ? (
               <div className="p-5 space-y-3">
                 {Array(5).fill(null).map((_, i) => (
-                  <div key={i} className="h-10 bg-gray-100 rounded animate-pulse" />
+                  <div key={i} className="h-10 bg-muted rounded animate-pulse" />
                 ))}
               </div>
             ) : !data || data.recentAppointments.length === 0 ? (
@@ -228,7 +302,7 @@ export default function AnalyticsPage() {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-xs text-muted-foreground uppercase tracking-wide">
+                  <thead className="bg-secondary text-xs text-muted-foreground uppercase tracking-wide">
                     <tr>
                       <th className="px-5 py-3 text-left font-medium">Время</th>
                       <th className="px-5 py-3 text-left font-medium">Клиент</th>
@@ -238,9 +312,9 @@ export default function AnalyticsPage() {
                       <th className="px-5 py-3 text-right font-medium">Стоимость</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-border">
                     {data.recentAppointments.slice(0, 10).map((appt) => (
-                      <tr key={appt.id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={appt.id} className="hover:bg-secondary transition-colors">
                         <td className="px-5 py-3 whitespace-nowrap text-muted-foreground">
                           {formatDateTime(appt.datetime)}
                         </td>

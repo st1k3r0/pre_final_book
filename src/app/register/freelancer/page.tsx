@@ -124,26 +124,28 @@ export default function RegisterFreelancerPage() {
 
   const inputCls = (field: keyof FormData) => (errors[field] ? "border-destructive" : "");
 
+  const COLOR = "#06b6d4";
+
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#f0fcfc" }}>
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header
-        className="flex items-center justify-between px-6 py-4"
-        style={{ backgroundColor: "#0e7070" }}
+        className="flex items-center justify-between px-6 py-4 border-b"
+        style={{ backgroundColor: "#0c0812", borderColor: "rgba(168,85,247,0.22)" }}
       >
-        <Link href="/" className="flex items-center gap-2 text-xl font-bold text-white">
-          <Scissors className="h-5 w-5" />
+        <Link href="/" className="flex items-center gap-2 text-xl font-bold text-foreground">
+          <Scissors className="h-5 w-5" style={{ color: COLOR }} />
           BookApp
         </Link>
         <Link href="/login?role=FREELANCER">
-          <Button variant="outline" className="text-white border-white/40 bg-transparent hover:bg-white/10 text-sm">
+          <Button variant="outline" className="text-sm">
             Уже есть аккаунт? Войти →
           </Button>
         </Link>
       </header>
 
       <div className="max-w-3xl mx-auto px-4 py-10">
-        <h1 className="text-2xl font-bold mb-1 flex items-center gap-2" style={{ color: "#0e7070" }}>
+        <h1 className="text-2xl font-bold mb-1 flex items-center gap-2" style={{ color: COLOR }}>
           <Scissors className="h-6 w-6" />
           Регистрация фрилансера
         </h1>
@@ -154,8 +156,8 @@ export default function RegisterFreelancerPage() {
         <form onSubmit={handleSubmit}>
           <div className="grid md:grid-cols-2 gap-6">
             {/* Left */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border space-y-4">
-              <h2 className="font-semibold" style={{ color: "#0e7070" }}>Личные данные</h2>
+            <div className="bg-card rounded-2xl p-6 border space-y-4">
+              <h2 className="font-semibold" style={{ color: COLOR }}>Личные данные</h2>
 
               <div className="space-y-1.5">
                 <Label htmlFor="fullNameFl">Имя Фамилия *</Label>
@@ -241,8 +243,8 @@ export default function RegisterFreelancerPage() {
             </div>
 
             {/* Right */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border space-y-4">
-              <h2 className="font-semibold" style={{ color: "#0e7070" }}>Профессиональные данные</h2>
+            <div className="bg-card rounded-2xl p-6 border space-y-4">
+              <h2 className="font-semibold" style={{ color: COLOR }}>Профессиональные данные</h2>
 
               <div className="space-y-1.5">
                 <Label htmlFor="specFl">Специализация *</Label>
@@ -319,7 +321,7 @@ export default function RegisterFreelancerPage() {
               type="submit"
               disabled={loading || !agreed}
               className="w-full h-12 text-base font-semibold"
-              style={{ backgroundColor: "#0e7070" }}
+              style={{ backgroundColor: COLOR }}
             >
               {loading ? "Регистрация..." : (
                 <span className="flex items-center gap-2"><CheckCircle className="h-4 w-4" />Зарегистрироваться как фрилансер</span>
