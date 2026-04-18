@@ -444,7 +444,6 @@ export default function EmployeesPage() {
             { icon: <Users className="h-4 w-4" />, label: "Сотрудники", href: "/cabinet/business/employees", active: true },
             { icon: <Users className="h-4 w-4" />, label: "Клиенты", href: "/cabinet/business/clients" },
             { icon: <BarChart3 className="h-4 w-4" />, label: "Аналитика", href: "/cabinet/business/analytics" },
-            { icon: <DollarSign className="h-4 w-4" />, label: "Финансы", href: "/cabinet/business/finances" },
             { icon: <Settings className="h-4 w-4" />, label: "Услуги", href: "/cabinet/business/services" },
           ].map((item) => (
             <Link

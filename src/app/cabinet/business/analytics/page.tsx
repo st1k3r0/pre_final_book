@@ -9,7 +9,6 @@ import {
   Users,
   Calendar,
   BarChart3,
-  DollarSign,
   Settings,
   LogOut,
   CheckCircle,
@@ -64,7 +63,6 @@ function Sidebar({ activeHref }: { activeHref: string }) {
     { icon: <Users className="h-4 w-4" />, label: "Сотрудники", href: "/cabinet/business/employees" },
     { icon: <Users className="h-4 w-4" />, label: "Клиенты", href: "/cabinet/business/clients" },
     { icon: <BarChart3 className="h-4 w-4" />, label: "Аналитика", href: "/cabinet/business/analytics" },
-    { icon: <DollarSign className="h-4 w-4" />, label: "Финансы", href: "/cabinet/business/finances" },
     { icon: <Settings className="h-4 w-4" />, label: "Услуги", href: "/cabinet/business/services" },
   ];
 
